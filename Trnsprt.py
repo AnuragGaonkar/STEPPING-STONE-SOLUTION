@@ -494,7 +494,7 @@ def move_truck1():
 
 def start_animation(event=None):
     global current_frame, truck_speed1
-    root.attributes("-fullscreen", True)  # Make the window fullscreen
+    root.attributes("-fullscreen", False)  # Make the window fullscreen
     root.bind("<Key>", lambda e: None)  # Unbind the key event to prevent multiple animations
     resize_truck()
     move_truck1()
@@ -527,7 +527,8 @@ def switch_to_frame2(event=None):
 
 root = tk.Tk()
 root.title("Transportation Problem Solver")
-root.attributes("-fullscreen", True)  # Start the window in fullscreen mode
+root.geometry("1200x700")
+root.resizable(True, True)  
 
 icon_image = Image.open("logo.ico")
 icon_photo = ImageTk.PhotoImage(icon_image)
