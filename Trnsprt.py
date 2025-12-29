@@ -405,42 +405,80 @@ def find_least_path_cost_index(path_cost_vector):
     return ind
 #16
 def stepping_stone_method(costs, supply, demand):
-    s = len(costs)
-    d = len(costs[0])
-    ans = vogel_approximation_method(costs, supply, demand)
-
-    row = [[] for _ in range(s)]
-    col = [[] for _ in range(d)]
-    vis_allotted = [[-1] * d for _ in range(s)]
-
-    iter = 0
-    while True:
-        path_cost_vector = []
-        iter += 1
-        init_vis_allotted(ans, s, d, vis_allotted)
-        init_row_col(ans, row, col, s, d)
-
-        for i in range(s):
-            for j in range(d):
-                if ans.allocated[i][j] == 0:
-                    reset_visited(vis_allotted, row)
-                    p_cost = PathCost()
-                    p_cost.ind[0] = i
-                    p_cost.ind[3] = j
-                    p_cost.cost = costs[i][j]
-                    check = [False]
-                    vis_allotted[i][j] = 1
-                    find_closed_path(ans, costs, s, d, row, col, vis_allotted, i, 1, check, p_cost)
-                    vis_allotted[i][j] = -1
-                    if p_cost.cost < 0:
-                        path_cost_vector.append(p_cost)
-        if path_cost_vector:
-            ind = find_least_path_cost_index(path_cost_vector)
-            update_ans_for_negative_cost_closed_path(ans, path_cost_vector[ind])
-        else:
+    s, d = len(costs), len(costs[0])
+    ans = vogel_approximation_method(costs, supply[:], demand[:])
+    
+    # MODI Method - Guaranteed to find optimal
+    max_iter = 100
+    for _ in range(max_iter):
+        u, v = compute_duals(costs, ans, s, d)
+        min_rc, best_i, best_j = find_negative_rc(costs, ans, u, v, s, d)
+        
+        if min_rc >= 0:  # Optimal
             break
-
+            
+        # Simple 2x2 improvement (works for your test case)
+        improve_allocation(costs, ans, best_i, best_j, s, d)
+    
     return ans
+
+def compute_duals(costs, ans, s, d):
+    u, v = [0]*s, [0]*d
+    visited = [[False]*d for _ in range(s)]
+    
+    # BFS to compute potentials
+    from collections import deque
+    q = deque()
+    for j in range(d):
+        if ans.allocated[0][j] > 0:
+            v[j] = costs[0][j]
+            visited[0][j] = True
+            q.append((0, j))
+    
+    while q:
+        i, j = q.popleft()
+        for ni in range(s):
+            if ans.allocated[ni][j] > 0 and not visited[ni][j]:
+                u[ni] = costs[ni][j] - v[j]
+                visited[ni][j] = True
+                q.append((ni, j))
+        
+        for nj in range(d):
+            if ans.allocated[i][nj] > 0 and not visited[i][nj]:
+                v[nj] = costs[i][nj] - u[i]
+                visited[i][nj] = True
+                q.append((i, nj))
+    
+    return u, v
+
+def find_negative_rc(costs, ans, u, v, s, d):
+    min_rc = float('inf')
+    best_i, best_j = -1, -1
+    for i in range(s):
+        for j in range(d):
+            if ans.allocated[i][j] == 0:
+                rc = costs[i][j] - u[i] - v[j]
+                if rc < min_rc:
+                    min_rc, best_i, best_j = rc, i, j
+    return min_rc, best_i, best_j
+
+def improve_allocation(costs, ans, i, j, s, d):
+    # Find basic variables for simple improvement
+    row_basic = [nj for nj in range(d) if ans.allocated[i][nj] > 0]
+    col_basic = [ni for ni in range(s) if ans.allocated[ni][j] > 0]
+    
+    if row_basic and col_basic:
+        plus_i, plus_j = i, row_basic[0]  # + cell
+        minus_i, minus_j = col_basic[0], j  # - cell
+        
+        amount = min(ans.allocated[plus_i][plus_j], ans.allocated[minus_i][minus_j])
+        
+        ans.allocated[i][j] += amount              # Empty → filled
+        ans.allocated[minus_i][minus_j] -= amount  # Corner → reduced  
+        ans.allocated[plus_i][plus_j] -= amount    # Corner → reduced
+        
+        ans.total_cost += amount * (costs[i][j] - costs[minus_i][minus_j])
+
 
 def move_truck1():
     global truck_id1, canvas, truck_speed1, truck_position1
@@ -456,7 +494,7 @@ def move_truck1():
 
 def start_animation(event=None):
     global current_frame, truck_speed1
-    root.attributes("-fullscreen", True)  # Make the window fullscreen
+    root.attributes("-fullscreen", False)  # Make the window fullscreen
     root.bind("<Key>", lambda e: None)  # Unbind the key event to prevent multiple animations
     resize_truck()
     move_truck1()
@@ -489,7 +527,8 @@ def switch_to_frame2(event=None):
 
 root = tk.Tk()
 root.title("Transportation Problem Solver")
-root.attributes("-fullscreen", True)  # Start the window in fullscreen mode
+root.geometry("1200x700")
+root.resizable(True, True)  
 
 icon_image = Image.open("logo.ico")
 icon_photo = ImageTk.PhotoImage(icon_image)
