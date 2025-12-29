@@ -7,6 +7,18 @@ from tkinter import Label
 from PIL import ImageTk,Image
 from customtkinter import *
 from tkinter import messagebox
+import sys
+import os
+
+def resource_path(relative_path):
+    try:
+        # PyInstaller temp folder
+        base_path = sys._MEIPASS
+    except Exception:
+        # Normal Python execution
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
 
 class CTkLabel(Label):
     def __init__(self, master=None, style=None, **kwargs):
@@ -123,7 +135,7 @@ def cost_matrix_creator():
         canvas.grid(row=num_row + 1, column=1, padx=20, pady=20)  # Center the canvas for the truck animation
 
         # Load truck image
-        truck_image = Image.open("truck.png")
+        truck_image = Image.open(resource_path("truck.png"))
         truck_image = truck_image.resize((150, 75), Image.LANCZOS)
         truck_image = ImageTk.PhotoImage(truck_image)
 
@@ -508,7 +520,7 @@ def resize_truck(event=None):
     truck_height = canvas.winfo_height()
 
     # Load and resize the truck image
-    truck_image1 = Image.open("1st.jpg")
+    truck_image1 = Image.open(resource_path("1st.jpg"))
     truck_image1 = truck_image1.resize((truck_width, truck_height), Image.LANCZOS)
     truck_image1 = ImageTk.PhotoImage(truck_image1)
 
@@ -530,14 +542,14 @@ root.title("Transportation Problem Solver")
 root.geometry("1200x700")
 root.resizable(True, True)  
 
-icon_image = Image.open("logo.ico")
+icon_image = Image.open(resource_path("logo.ico"))
 icon_photo = ImageTk.PhotoImage(icon_image)
 root.iconphoto(True, icon_photo)
 
 canvas = tk.Canvas(root, bg='white')  # Set the background color to white
 canvas.pack(fill=tk.BOTH, expand=True)
 
-truck_image1 = Image.open("1st.jpg")
+truck_image1 = Image.open(resource_path("1st.jpg"))
 truck_image1 = truck_image1.resize((200, 90), Image.LANCZOS)
 truck_image1 = ImageTk.PhotoImage(truck_image1)
 
