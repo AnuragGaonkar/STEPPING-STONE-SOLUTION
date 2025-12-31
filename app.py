@@ -6,11 +6,13 @@ from collections import deque
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
+
 st.set_page_config(
     page_title="Smart Transportation Optimizer",
     page_icon="logo.ico",
     layout="wide"
 )
+
 
 st.markdown("""
 <style>
@@ -79,22 +81,30 @@ st.markdown("""
     padding: 1rem 2rem !important;
     box-shadow: 0 10px 30px rgba(59,130,246,0.4) !important;
 }
+/* Fix whitespace issue */
+.element-container > div > div {
+    padding-top: 0 !important;
+}
 </style>
 """, unsafe_allow_html=True)
+
 
 # FIXED ALGORITHM CLASSES - EXACTLY MATCHING YOUR DESKTOP VERSION
 class PathCost:
     def __init__(self): self.ind = [0] * 4; self.cost = 0
     def __lt__(self, other): return self.cost < other.cost
 
+
 class Ans:
     def __init__(self, m, n): 
         self.total_cost = 0
         self.allocated = [[0.0] * n for _ in range(m)]  # FIXED: Use float 0.0
 
+
 class IndexCost:
     def __init__(self, index, cost): self.index = index; self.cost = cost
     def __lt__(self, other): return self.cost < other.cost
+
 
 def calc_diff(s, vis_row, vis_col, pq_row):
     row_diff = [-1] * s
@@ -111,6 +121,7 @@ def calc_diff(s, vis_row, vis_col, pq_row):
             pq_row[i].put(t)
     return row_diff
 
+
 def vogel_approximation_method(costs, supply, demand):
     s, d = len(costs), len(costs[0])
     ans = Ans(s, d)
@@ -119,17 +130,21 @@ def vogel_approximation_method(costs, supply, demand):
     pq_row = [PriorityQueue() for _ in range(s)]
     pq_col = [PriorityQueue() for _ in range(d)]
 
+
     # FIXED: Copy lists to avoid mutation
     supply = supply[:]
     demand = demand[:]
+
 
     for i in range(s):
         for j in range(d):
             pq_row[i].put(IndexCost(j, costs[i][j]))
             pq_col[j].put(IndexCost(i, costs[i][j]))
 
+
     row_diff = calc_diff(s, vis_row, vis_col, pq_row)
     col_diff = calc_diff(d, vis_col, vis_row, pq_col)
+
 
     t1, t2 = 0, 0
     while t1 + t2 < s + d - 1:
@@ -140,6 +155,7 @@ def vogel_approximation_method(costs, supply, demand):
         row_ind = row_diff.index(max_row)
         col_ind = col_diff.index(max_col)
 
+
         if row_diff[row_ind] < col_diff[col_ind]:
             i = pq_col[col_ind].queue[0].index
             j = col_ind
@@ -148,6 +164,7 @@ def vogel_approximation_method(costs, supply, demand):
             i = row_ind
             j = pq_row[row_ind].queue[0].index
             pq_row[row_ind].get()
+
 
         if supply[i] <= demand[j]:
             ans.total_cost += costs[i][j] * supply[i]
@@ -168,6 +185,7 @@ def vogel_approximation_method(costs, supply, demand):
             col_diff[j] = -1
             row_diff = calc_diff(s, vis_row, vis_col, pq_row)
     return ans
+
 
 def compute_duals(costs, ans, s, d):
     u, v = [0.0]*s, [0.0]*d  # FIXED: Use float
@@ -194,6 +212,7 @@ def compute_duals(costs, ans, s, d):
                 q.append((i, nj))
     return u, v
 
+
 def find_negative_rc(costs, ans, u, v, s, d):
     min_rc, best_i, best_j = float('inf'), -1, -1
     for i in range(s):
@@ -203,6 +222,7 @@ def find_negative_rc(costs, ans, u, v, s, d):
                 if rc < min_rc:
                     min_rc, best_i, best_j = rc, i, j
     return min_rc, best_i, best_j
+
 
 def improve_allocation(costs, ans, i, j, s, d):
     row_basic = [nj for nj in range(d) if ans.allocated[i][nj] > 0]
@@ -215,6 +235,7 @@ def improve_allocation(costs, ans, i, j, s, d):
         ans.allocated[minus_i][minus_j] -= amount
         ans.allocated[plus_i][plus_j] -= amount
         ans.total_cost += amount * (costs[i][j] - costs[minus_i][minus_j])
+
 
 def stepping_stone_method(costs, supply, demand):
     s, d = len(costs), len(costs[0])
@@ -230,6 +251,7 @@ def stepping_stone_method(costs, supply, demand):
         improve_allocation(costs, ans, best_i, best_j, s, d)
     return ans
 
+
 # UI
 st.markdown("""
 <div class="header">
@@ -238,7 +260,9 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+
 tab1, tab2 = st.tabs(["Interactive Solver", "Algorithm Details"])
+
 
 with tab1:
     st.markdown('<div class="card">', unsafe_allow_html=True)
@@ -283,14 +307,12 @@ with tab1:
             value = st.number_input(f"D{j+1}", min_value=0.0, value=0.0, step=1.0, key=f"demand_{j}")
             demand.append(float(value))
     
-    col1, col2, col3 = st.columns(3)
+    # REMOVED balance column completely as requested
+    col1, col2 = st.columns(2)
     with col1:
         supply_total = st.number_input("Total Supply Check", value=sum(supply), disabled=True)
     with col2:
         demand_total = st.number_input("Total Demand Check", value=sum(demand), disabled=True)
-    with col3:
-        balance = "✅ Balanced" if abs(sum(supply) - sum(demand)) < 1e-6 else "⚠️ Unbalanced"
-        st.metric("Balance Status", balance)
     
     if st.button("OPTIMIZE ROUTES", type="primary", key="optimize"):
         if sum(supply) == 0 or sum(demand) == 0:
@@ -332,7 +354,7 @@ with tab1:
                     )
                     st.dataframe(alloc_df, use_container_width=True)
                     
-                    # FIXED: Perfect readable heatmaps
+                    # FIXED: Perfect readable heatmaps - REMOVED titleside property
                     fig = make_subplots(1, 2, subplot_titles=["Cost Matrix (₹)", "Optimal Allocation"])
                     
                     # Cost heatmap with white text + light background
@@ -342,7 +364,7 @@ with tab1:
                         text=[[f"₹{int(x)}" for x in row] for row in cost_matrix],
                         texttemplate="%{text}", 
                         textfont={"size": 14, "color": "black"},
-                        colorbar=dict(title="Cost", titleside="right"),
+                        colorbar=dict(title="Cost"),  # FIXED: Removed titleside
                         showscale=True
                     ), row=1, col=1)
                     
@@ -353,7 +375,7 @@ with tab1:
                         text=[[f"{x:.0f}" for x in row] for row in result.allocated],
                         texttemplate="%{text}", 
                         textfont={"size": 14, "color": "black"},
-                        colorbar=dict(title="Units", titleside="right"),
+                        colorbar=dict(title="Units"),  # FIXED: Removed titleside
                         showscale=True
                     ), row=1, col=2)
                     
@@ -369,6 +391,7 @@ with tab1:
                     st.info("Please ensure all values are valid numbers and supply ≈ demand")
     
     st.markdown('</div>', unsafe_allow_html=True)
+
 
 with tab2:
     st.markdown('<div class="card">', unsafe_allow_html=True)
@@ -404,6 +427,7 @@ with tab2:
     </div>
     """, unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
+
 
 st.markdown("""
 <div style='
