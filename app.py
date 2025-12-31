@@ -245,7 +245,6 @@ st.markdown("""
 tab1, tab2 = st.tabs(["Interactive Solver", "Algorithm Details"])
 
 with tab1:
-    st.markdown('<div class="card">', unsafe_allow_html=True)
     
     col1, col2 = st.columns([1, 2])
     
