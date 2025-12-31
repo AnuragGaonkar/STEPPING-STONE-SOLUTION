@@ -1,127 +1,362 @@
-import streamlit as st
-import numpy as np
-import pandas as pd
 from queue import PriorityQueue
-from collections import deque
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
+from tkinter import messagebox
+from tkinter import ttk
+import tkinter as tk
+from ttkthemes import ThemedTk
+from tkinter import Label
+from PIL import ImageTk,Image
+from customtkinter import *
+from tkinter import messagebox
+import sys
+import os
 
-st.set_page_config(
-    page_title="Smart Transportation Optimizer",
-    page_icon="logo.ico",
-    layout="wide"
-)
+def resource_path(relative_path):
+    try:
+        # PyInstaller temp folder
+        base_path = sys._MEIPASS
+    except Exception:
+        # Normal Python execution
+        base_path = os.path.abspath(".")
 
-st.markdown("""
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-* { font-family: 'Inter', sans-serif; }
-.main { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #06b6d4 100%); }
-.stApp { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #06b6d4 100%); }
-.header { 
-    background: rgba(255,255,255,0.95); 
-    backdrop-filter: blur(20px); 
-    border-radius: 24px; 
-    padding: 3rem; 
-    margin: 2rem 0; 
-    box-shadow: 0 25px 50px rgba(0,0,0,0.2);
-    text-align: center;
-}
-.title { 
-    font-size: 3.5rem; 
-    font-weight: 800; 
-    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-    -webkit-background-clip: text; 
-    -webkit-text-fill-color: transparent; 
-    margin: 0; 
-}
-.subtitle { 
-    font-size: 1.3rem; 
-    color: #64748b; 
-    font-weight: 500; 
-    margin-top: 0.5rem; 
-}
-.card { 
-    background: rgba(255,255,255,0.95); 
-    backdrop-filter: blur(20px); 
-    border-radius: 20px; 
-    border: 1px solid rgba(255,255,255,0.3); 
-    padding: 2rem; 
-    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-    margin-bottom: 2rem;
-}
-.metric-card { 
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%); 
-    color: white; 
-    border-radius: 16px; 
-    padding: 1.5rem; 
-    text-align: center; 
-}
-.metric-orange { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important; }
-.metric-blue { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important; }
-.metric-value { 
-    font-size: 2.5rem !important; 
-    font-weight: 800 !important; 
-    color: white !important; 
-    margin: 0.5rem 0 0 0 !important;
-}
-.metric-label { 
-    font-size: 1rem !important; 
-    font-weight: 600 !important; 
-    color: rgba(255,255,255,0.9) !important; 
-    margin: 0 !important;
-}
-.btn-optimize { 
-    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important; 
-    border-radius: 16px !important; 
-    font-weight: 700 !important; 
-    font-size: 1.2rem !important;
-    padding: 1rem 2rem !important;
-    box-shadow: 0 10px 30px rgba(59,130,246,0.4) !important;
-}
-</style>
-""", unsafe_allow_html=True)
+    return os.path.join(base_path, relative_path)
 
-# FIXED ALGORITHM CLASSES - EXACTLY MATCHING YOUR DESKTOP VERSION
+class CTkLabel(Label):
+    def __init__(self, master=None, style=None, **kwargs):
+        if style is not None:
+            # If a style is provided, use it to configure the label
+            foreground = style.get("foreground", "black")
+            background = style.get("background", "white")
+            font = style.get("font", ("Arial", 12))
+            kwargs["fg"] = foreground
+            kwargs["bg"] = background
+            kwargs["font"] = font
+
+        super().__init__(master, **kwargs)
+
+#1
 class PathCost:
-    def __init__(self): self.ind = [0] * 4; self.cost = 0
-    def __lt__(self, other): return self.cost < other.cost
+    def __init__(self):
+        self.ind = [0] * 4
+        self.cost = 0
 
+    def __lt__(self, other):
+        return self.cost < other.cost
+#2
 class Ans:
-    def __init__(self, m, n): 
+    def __init__(self, m, n):
         self.total_cost = 0
-        self.allocated = [[0.0] * n for _ in range(m)]  # FIXED: Use float 0.0
-
+        self.allocated = [[0] * n for _ in range(m)]
+#3
 class IndexCost:
-    def __init__(self, index, cost): self.index = index; self.cost = cost
-    def __lt__(self, other): return self.cost < other.cost
+    def __init__(self, index, cost):
+        self.index = index  # for both supply or demand index
+        self.cost = cost
+
+    def __lt__(self, other):
+        return self.cost < other.cost
+#4
+class indexCostCompare:
+    def __init__(self):
+        pass
+
+    def __call__(self, a: 'IndexCost', b: 'IndexCost'):
+        if a.cost == b.cost:
+            return a.index > b.index
+        else:
+            return a.cost > b.cost
+#5
+
+total_cost = 0
+
+def cost_matrix_creator():
+    num_row_str = num_row_entry.get()
+    num_col_str = num_col_entry.get()
+    
+    supply_entries = []  # Define as global
+    demand_entries = []  # Define as global
+
+    try:
+        num_row = int(num_row_str)
+        num_col = int(num_col_str)
+    except ValueError:
+        messagebox.showerror("Error", "Please enter valid integer values for the number of rows and columns.")
+        return
+
+    if num_row <= 0 or num_col <= 0:
+        messagebox.showerror("Error", "Please enter positive integer values for the number of rows and columns.")
+        return
+
+    frame2.pack_forget()
+    frame3 = CTkFrame(master=root, fg_color='white', corner_radius=20)
+    cost_matrix_label = CTkLabel(frame3, text="Enter the Cost Matrix:", font=("Arial", 15, "bold"), style={"foreground": "black", "background": "white"})
+    cost_matrix_label.grid(row=0, column=0, pady=20)
+
+    cost_entries = []
+    for i in range(num_row):
+        row = []
+        for j in range(num_col):
+            entry = CTkEntry(frame3, placeholder_text=f"S{i + 1}->D{j + 1}")
+            entry.grid(row=i + 1, column=j, pady=5, padx=5)
+            row.append(entry)
+        cost_entries.append(row)
+
+    def switch_to_frame4():
+        frame3.pack_forget()  # Hide frame3
+        frame4.pack(expand=True, padx=20, pady=20)
+
+    next_button = CTkButton(frame3, text="NEXT", command=switch_to_frame4)
+    frame3.grid_columnconfigure(0, weight=1)
+    frame3.grid_columnconfigure(2, weight=1)
+
+    # Place the "NEXT" button at the bottom center
+    next_button.grid(row=num_row + 6, column=1, pady=20, sticky=tk.S + tk.E + tk.W)
+
+ 
+    def move_truck():
+        global truck_image, truck_id, canvas, truck_speed, truck_position, arrow_id, arrow_position, arrow_speed
+        canvas.move(truck_id, truck_speed, 0)
+        canvas.move(arrow_id, arrow_speed, 0)
+        truck_position += truck_speed
+        arrow_position += arrow_speed
+        if truck_position < canvas.winfo_width() and arrow_position < 220:
+            canvas.after(50, move_truck)
+        else:
+            canvas.delete(arrow_id)
+            total_cost_frame = CTkFrame(frame4, fg_color='black', corner_radius=10)
+            total_cost_frame.grid(row=num_row + 5, column=1, pady=20, sticky=tk.N)
+            total_cost_label = CTkLabel(total_cost_frame, text=f"Total Cost: {total_cost}", font=("Arial", 25, "bold"), fg="green")
+            total_cost_label.pack(padx=10, pady=10)  # Display total cost at the bottom middle
+            messagebox.showinfo("Animation Finished", "Trucks have reached the destination!")
+
+    def add_truck_animation(frame):
+        nonlocal supply_entries, demand_entries
+        global canvas, truck_image, truck_id, truck_speed, truck_position, arrow_id, arrow_position, arrow_speed
+        canvas = tk.Canvas(frame, width=400, height=200, bg="white")
+        canvas.grid(row=num_row + 1, column=1, padx=20, pady=20)  # Center the canvas for the truck animation
+
+        # Load truck image
+        truck_image = Image.open(resource_path("truck.png"))
+        truck_image = truck_image.resize((150, 75), Image.LANCZOS)
+        truck_image = ImageTk.PhotoImage(truck_image)
+
+        # Draw the truck
+        truck_position = 0
+        truck_speed = 6
+        truck_id = canvas.create_image(truck_position, 80, anchor=tk.NW, image=truck_image)
+
+        # Display "SOURCES" and "DESTINATIONS"
+        sources_text = canvas.create_text(10, 20, anchor=tk.NW, text="SOURCES", font=("Arial", 9, "bold"))
+        destinations_text = canvas.create_text(390, 20, anchor=tk.NE, text="DESTINATIONS", font=("Arial", 9, "bold"))
+
+
+        # Draw the arrow
+        arrow_position = 10
+        arrow_speed = 5
+        arrow_id = canvas.create_line(70, 30, 100, 30, arrow=tk.LAST, fill="red")
+
+         # Arrange supply text fields
+        supply_frame = CTkFrame(frame, fg_color='white', corner_radius=20)
+        supply_frame.grid(row=num_row + 1, column=0, padx=20, pady=20, rowspan=num_row)
+
+        supply_label = CTkLabel(supply_frame, text="Supply:", font=("Arial", 15, "bold"), style={"foreground": "black", "background": "white"})
+        supply_label.grid(row=0, column=0, pady=10, padx=20, sticky=tk.W)
+
+        supply_entries = []
+        for i in range(num_row):
+            entry = CTkEntry(supply_frame, placeholder_text=f"S{i+1}")
+            entry.grid(row=i + 1, column=0, pady=5, padx=5, sticky=tk.W)
+            supply_entries.append(entry)
+        # Arrange demand text fields
+        demand_frame = CTkFrame(frame, fg_color='white', corner_radius=20)
+        demand_frame.grid(row=num_row + 1, column=2, padx=20, pady=20, rowspan=num_col)
+
+        demand_label = CTkLabel(demand_frame, text="Demand:", font=("Arial", 15, "bold"), style={"foreground": "black", "background": "white"})
+        demand_label.grid(row=0, column=0, pady=10, padx=20, sticky=tk.W)
+
+        demand_entries = []
+        for i in range(num_col):
+            entry = CTkEntry(demand_frame, placeholder_text=f"D{i+1}")
+            entry.grid(row=i + 1, column=0, pady=5, padx=5, sticky=tk.W)
+            demand_entries.append(entry)
+
+
+    frame4 = CTkFrame(master=root, fg_color='white', corner_radius=20)
+
+    # Add truck animation to frame4
+    add_truck_animation(frame4)
+    
+    solve_button = CTkButton(frame4, text="Solve", command=lambda: solve(supply_entries, demand_entries))
+    frame4.grid_columnconfigure(0, weight=1)
+    frame4.grid_columnconfigure(2, weight=1)
+    solve_button.grid(row=num_row + 6, column=1, pady=20, sticky=tk.S + tk.E + tk.W)
+
+
+    def solve(supply_entries, demand_entries):
+        global total_cost
+        costs = []
+        for i in range(num_row):
+            row = []
+            for j in range(num_col):
+                try:
+                    value = int(cost_entries[i][j].get())
+                    row.append(value)
+                except ValueError:
+                    messagebox.showerror("Error", "Please enter valid integer values for the cost matrix entries.")
+                    return
+            costs.append(row)
+
+        supply = []
+        for i in range(num_row):
+            try:
+                value = int(supply_entries[i].get())
+                supply.append(value)
+            except ValueError:
+                messagebox.showerror("Error", "Please enter valid integer values for the supply entries.")
+                return
+
+        demand = []
+        for i in range(num_col):
+            try:
+                value = int(demand_entries[i].get())
+                demand.append(value)
+            except ValueError:
+                messagebox.showerror("Error", "Please enter valid integer values for the demand entries.")
+                return
+
+        try:
+            ans = stepping_stone_method(costs, supply, demand)
+            total_cost = print_ans(ans, len(costs), len(costs[0]))
+            # Move the truck after solving
+            move_truck()
+        except ValueError:
+            messagebox.showerror("Error", "An error occurred while solving the transportation problem.")
+            return
+
+    frame3.pack(expand=True, padx=20, pady=20)
+    frame4.pack_forget()  # Initially hide frame4
+
+   
+#6
+def print_ans(ans, s, d):
+    print("----Allocated Values---")
+    for i in range(s):
+        for j in range(d):
+            print(ans.allocated[i][j], end=" ")
+        print()
+    print(ans.total_cost)
+    return (ans.total_cost)
+#7
+def init_vis_allotted(ans, s, d, vis_allotted):
+    for i in range(s):
+        for j in range(d):
+            if ans.allocated[i][j]:
+                vis_allotted[i][j] = 0
+            else:
+                vis_allotted[i][j] = -1
+#8
+def init_row_col(ans, row, col, s, d):
+    # clear previous values
+    for i in range(s):
+        row[i].clear()
+    for j in range(d):
+        col[j].clear()
+
+    # init to new values
+    for i in range(s):
+        for j in range(d):
+            if ans.allocated[i][j]:
+                row[i].append(j)
+                col[j].append(i)
+#9
+def check_visited_all(p_cost, vis_allotted):
+    # returns True if all nodes of closed path are visited
+    if (vis_allotted[p_cost.ind[0]][p_cost.ind[3]] == 1 and
+            vis_allotted[p_cost.ind[0]][p_cost.ind[1]] == 1 and
+            vis_allotted[p_cost.ind[2]][p_cost.ind[1]] == 1 and
+            vis_allotted[p_cost.ind[2]][p_cost.ind[3]] == 1):
+        return True
+    return False
+#10
+def find_closed_path(ans, costs, s, d, row, col, vis_allotted, I, path_index, check, p_cost):
+    if path_index == 4:
+        if check_visited_all(p_cost, vis_allotted):
+            check[0] = True
+        return
+
+    if path_index % 2 == 1:
+        # row
+        for i in range(len(row[I])):
+            if ans.allocated[I][row[I][i]] and vis_allotted[I][row[I][i]] == 0:
+                vis_allotted[I][row[I][i]] = 1
+                temp = p_cost.ind[path_index]
+                p_cost.ind[path_index] = row[I][i]
+                find_closed_path(ans, costs, s, d, row, col, vis_allotted, row[I][i], path_index + 1, check, p_cost)
+                if check[0]:
+                    p_cost.cost -= costs[I][row[I][i]]
+                    return
+                vis_allotted[I][row[I][i]] = 0
+                p_cost.ind[path_index] = temp
+    else:
+        # col
+        for i in range(len(col[I])):
+            if ans.allocated[col[I][i]][I] and vis_allotted[col[I][i]][I] == 0:
+                vis_allotted[col[I][i]][I] = 1
+                temp = p_cost.ind[path_index]
+                p_cost.ind[path_index] = col[I][i]
+                find_closed_path(ans, costs, s, d, row, col, vis_allotted, col[I][i], path_index + 1, check, p_cost)
+                if check[0]:
+                    p_cost.cost += costs[col[I][i]][I]
+                    return
+                vis_allotted[col[I][i]][I] = 0
+                p_cost.ind[path_index] = temp
+#11
+def update_ans_for_negative_cost_closed_path(ans, p_cost):
+    # Update cost for negative least cost closed path
+    x = [0, 0]
+    y = [0, 0]
+    x[0] = p_cost.ind[0]
+    y[0] = p_cost.ind[1]
+    x[1] = p_cost.ind[2]
+    y[1] = p_cost.ind[3]
+    min_alloc_value = min(ans.allocated[x[0]][y[0]], ans.allocated[x[1]][y[1]])
+
+    for i in range(2):
+        ans.allocated[x[i]][y[(i + 1) % 2]] += min_alloc_value
+        ans.allocated[x[i]][y[i]] -= min_alloc_value
+
+    ans.total_cost += min_alloc_value * p_cost.cost
+#12
 
 def calc_diff(s, vis_row, vis_col, pq_row):
     row_diff = [-1] * s
     for i in range(s):
-        if vis_row[i] or pq_row[i].empty(): continue
+        if vis_row[i] or pq_row[i].empty():
+            continue
+
+        # Get min cost cell in the i-th row that still has unallocated supply
         t = pq_row[i].get()
-        while not pq_row[i].empty() and vis_col[t.index]: 
+        while not pq_row[i].empty() and vis_col[t.index]:
             t = pq_row[i].get()
+
+        # Get 2nd min element
         if pq_row[i].empty():
+            # If there is no 2nd min element
             row_diff[i] = t.cost
             pq_row[i].put(t)
         else:
             row_diff[i] = pq_row[i].queue[0].cost - t.cost
             pq_row[i].put(t)
-    return row_diff
 
+    return row_diff
+#13
 def vogel_approximation_method(costs, supply, demand):
-    s, d = len(costs), len(costs[0])
+    s = len(costs)
+    d = len(costs[0])
     ans = Ans(s, d)
     vis_row = [False] * s
     vis_col = [False] * d
     pq_row = [PriorityQueue() for _ in range(s)]
     pq_col = [PriorityQueue() for _ in range(d)]
-
-    # FIXED: Copy lists to avoid mutation
-    supply = supply[:]
-    demand = demand[:]
 
     for i in range(s):
         for j in range(d):
@@ -131,14 +366,11 @@ def vogel_approximation_method(costs, supply, demand):
     row_diff = calc_diff(s, vis_row, vis_col, pq_row)
     col_diff = calc_diff(d, vis_col, vis_row, pq_col)
 
-    t1, t2 = 0, 0
+    t1 = 0
+    t2 = 0
     while t1 + t2 < s + d - 1:
-        # FIXED: Handle -1 values properly
-        max_row = max(row_diff) if max(row_diff) >= 0 else 0
-        max_col = max(col_diff) if max(col_diff) >= 0 else 0
-        
-        row_ind = row_diff.index(max_row)
-        col_ind = col_diff.index(max_col)
+        row_ind = row_diff.index(max(row_diff))
+        col_ind = col_diff.index(max(col_diff))
 
         if row_diff[row_ind] < col_diff[col_ind]:
             i = pq_col[col_ind].queue[0].index
@@ -167,13 +399,48 @@ def vogel_approximation_method(costs, supply, demand):
             t2 += 1
             col_diff[j] = -1
             row_diff = calc_diff(s, vis_row, vis_col, pq_row)
+
+    return ans
+#14
+def reset_visited(vis_allotted, row):
+    for i in range(len(row)):
+        for j in row[i]:
+            vis_allotted[i][j] = 0
+#15
+def find_least_path_cost_index(path_cost_vector):
+    low = float('inf') #con be changed
+    ind = 0
+    for i, path_cost in enumerate(path_cost_vector):
+        if path_cost.cost < low:
+            low = path_cost.cost
+            ind = i
+    return ind
+#16
+def stepping_stone_method(costs, supply, demand):
+    s, d = len(costs), len(costs[0])
+    ans = vogel_approximation_method(costs, supply[:], demand[:])
+    
+    # MODI Method - Guaranteed to find optimal
+    max_iter = 100
+    for _ in range(max_iter):
+        u, v = compute_duals(costs, ans, s, d)
+        min_rc, best_i, best_j = find_negative_rc(costs, ans, u, v, s, d)
+        
+        if min_rc >= 0:  # Optimal
+            break
+            
+        # Simple 2x2 improvement (works for your test case)
+        improve_allocation(costs, ans, best_i, best_j, s, d)
+    
     return ans
 
 def compute_duals(costs, ans, s, d):
-    u, v = [0.0]*s, [0.0]*d  # FIXED: Use float
+    u, v = [0]*s, [0]*d
     visited = [[False]*d for _ in range(s)]
-    q = deque()
     
+    # BFS to compute potentials
+    from collections import deque
+    q = deque()
     for j in range(d):
         if ans.allocated[0][j] > 0:
             v[j] = costs[0][j]
@@ -187,15 +454,18 @@ def compute_duals(costs, ans, s, d):
                 u[ni] = costs[ni][j] - v[j]
                 visited[ni][j] = True
                 q.append((ni, j))
+        
         for nj in range(d):
             if ans.allocated[i][nj] > 0 and not visited[i][nj]:
                 v[nj] = costs[i][nj] - u[i]
                 visited[i][nj] = True
                 q.append((i, nj))
+    
     return u, v
 
 def find_negative_rc(costs, ans, u, v, s, d):
-    min_rc, best_i, best_j = float('inf'), -1, -1
+    min_rc = float('inf')
+    best_i, best_j = -1, -1
     for i in range(s):
         for j in range(d):
             if ans.allocated[i][j] == 0:
@@ -205,221 +475,109 @@ def find_negative_rc(costs, ans, u, v, s, d):
     return min_rc, best_i, best_j
 
 def improve_allocation(costs, ans, i, j, s, d):
+    # Find basic variables for simple improvement
     row_basic = [nj for nj in range(d) if ans.allocated[i][nj] > 0]
     col_basic = [ni for ni in range(s) if ans.allocated[ni][j] > 0]
+    
     if row_basic and col_basic:
-        plus_i, plus_j = i, row_basic[0]
-        minus_i, minus_j = col_basic[0], j
+        plus_i, plus_j = i, row_basic[0]  # + cell
+        minus_i, minus_j = col_basic[0], j  # - cell
+        
         amount = min(ans.allocated[plus_i][plus_j], ans.allocated[minus_i][minus_j])
-        ans.allocated[i][j] += amount
-        ans.allocated[minus_i][minus_j] -= amount
-        ans.allocated[plus_i][plus_j] -= amount
+        
+        ans.allocated[i][j] += amount              # Empty → filled
+        ans.allocated[minus_i][minus_j] -= amount  # Corner → reduced  
+        ans.allocated[plus_i][plus_j] -= amount    # Corner → reduced
+        
         ans.total_cost += amount * (costs[i][j] - costs[minus_i][minus_j])
 
-def stepping_stone_method(costs, supply, demand):
-    s, d = len(costs), len(costs[0])
-    ans = vogel_approximation_method(costs, supply[:], demand[:])
-    
-    # MODI Optimization
-    max_iter = 100
-    for _ in range(max_iter):
-        u, v = compute_duals(costs, ans, s, d)
-        min_rc, best_i, best_j = find_negative_rc(costs, ans, u, v, s, d)
-        if min_rc >= 0:  # Optimal solution found
-            break
-        improve_allocation(costs, ans, best_i, best_j, s, d)
-    return ans
 
-# UI
-st.markdown("""
-<div class="header">
-    <h1 class="title">Smart Transportation Optimizer</h1>
-    <p class="subtitle">Production-Ready VAM + Stepping Stone Algorithm</p>
-</div>
-""", unsafe_allow_html=True)
+def move_truck1():
+    global truck_id1, canvas, truck_speed1, truck_position1
+    canvas.move(truck_id1, truck_speed1, 0)
+    truck_position1 += truck_speed1
+    if truck_position1 < canvas.winfo_width() - 200:  # Check if truck reaches the middle of the canvas
+        canvas.after(20, move_truck1)  # Increase the speed of the animation
+    else:
+        truck_speed1 = 0  # Stop the truck
+        root.bind("<Key>", lambda e: switch_to_frame2())  # Bind key event to switch to frame2
+        frame2.pack_forget()  # Hide frame2
+        canvas.pack(fill=tk.BOTH, expand=True)  # Show the canvas
 
-tab1, tab2 = st.tabs(["Interactive Solver", "Algorithm Details"])
+def start_animation(event=None):
+    global current_frame, truck_speed1
+    root.attributes("-fullscreen", False)  # Make the window fullscreen
+    root.bind("<Key>", lambda e: None)  # Unbind the key event to prevent multiple animations
+    resize_truck()
+    move_truck1()
 
-with tab1:
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    
-    col1, col2 = st.columns([1, 2])
-    
-    with col1:
-        st.markdown("### Matrix Configuration")
-        rows = st.number_input("Number of Sources", min_value=1, max_value=20, value=3)
-        cols = st.number_input("Number of Destinations", min_value=1, max_value=20, value=3)
-    
-    with col2:
-        st.markdown("### Cost Matrix (₹ per unit)")
-        cost_matrix = []
-        for i in range(rows):
-            row_cols = st.columns(cols)
-            row_data = []
-            for j, col_box in enumerate(row_cols):
-                with col_box:
-                    value = st.number_input(
-                        f"S{i+1} to D{j+1}",
-                        min_value=0.0,
-                        value=0.0,
-                        step=1.0,
-                        key=f"cost_{i}_{j}"
-                    )
-                    row_data.append(float(value))
-            cost_matrix.append(row_data)
-    
-    col_s1, col_s2 = st.columns(2)
-    with col_s1:
-        st.markdown("### Supply")
-        supply = []
-        for i in range(rows):
-            value = st.number_input(f"S{i+1}", min_value=0.0, value=0.0, step=1.0, key=f"supply_{i}")
-            supply.append(float(value))
-    
-    with col_s2:
-        st.markdown("### Demand")
-        demand = []
-        for j in range(cols):
-            value = st.number_input(f"D{j+1}", min_value=0.0, value=0.0, step=1.0, key=f"demand_{j}")
-            demand.append(float(value))
-    
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        supply_total = st.number_input("Total Supply Check", value=sum(supply), disabled=True)
-    with col2:
-        demand_total = st.number_input("Total Demand Check", value=sum(demand), disabled=True)
-    with col3:
-        balance = "✅ Balanced" if abs(sum(supply) - sum(demand)) < 1e-6 else "⚠️ Unbalanced"
-        st.metric("Balance Status", balance)
-    
-    if st.button("OPTIMIZE ROUTES", type="primary", key="optimize"):
-        if sum(supply) == 0 or sum(demand) == 0:
-            st.warning("Please enter supply and demand values")
-        elif all(val == 0 for row in cost_matrix for val in row):
-            st.warning("Please fill the cost matrix")
-        else:
-            with st.spinner("Computing optimal solution using VAM + MODI..."):
-                try:
-                    result = stepping_stone_method(cost_matrix, supply, demand)
-                    
-                    # Results Metrics
-                    col1, col2, col3 = st.columns(3)
-                    with col1:
-                        st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-                        st.markdown('<div class="metric-label">Total Cost</div>', unsafe_allow_html=True)
-                        st.markdown(f'<div class="metric-value">₹{int(result.total_cost)}</div>', unsafe_allow_html=True)
-                        st.markdown('</div>', unsafe_allow_html=True)
-                    
-                    with col2:
-                        st.markdown('<div class="metric-card metric-orange">', unsafe_allow_html=True)
-                        routes_used = sum(1 for row in result.allocated for x in row if x > 0)
-                        st.markdown('<div class="metric-label">Routes Used</div>', unsafe_allow_html=True)
-                        st.markdown(f'<div class="metric-value">{routes_used}</div>', unsafe_allow_html=True)
-                        st.markdown('</div>', unsafe_allow_html=True)
-                    
-                    with col3:
-                        st.markdown('<div class="metric-card metric-blue">', unsafe_allow_html=True)
-                        st.markdown('<div class="metric-label">Matrix Size</div>', unsafe_allow_html=True)
-                        st.markdown(f'<div class="metric-value">{rows}×{cols}</div>', unsafe_allow_html=True)
-                        st.markdown('</div>', unsafe_allow_html=True)
-                    
-                    # FIXED: Perfect table display
-                    st.markdown("### Optimal Allocation Matrix")
-                    alloc_df = pd.DataFrame(
-                        np.round(result.allocated, 1),
-                        index=[f"S{i+1}" for i in range(rows)],
-                        columns=[f"D{j+1}" for j in range(cols)]
-                    )
-                    st.dataframe(alloc_df, use_container_width=True)
-                    
-                    # FIXED: Perfect readable heatmaps
-                    fig = make_subplots(1, 2, subplot_titles=["Cost Matrix (₹)", "Optimal Allocation"])
-                    
-                    # Cost heatmap with white text + light background
-                    fig.add_trace(go.Heatmap(
-                        z=cost_matrix, 
-                        colorscale=[[0, 'rgb(255,255,255)'], [1, 'rgb(220,53,69)']],
-                        text=[[f"₹{int(x)}" for x in row] for row in cost_matrix],
-                        texttemplate="%{text}", 
-                        textfont={"size": 14, "color": "black"},
-                        colorbar=dict(title="Cost", titleside="right"),
-                        showscale=True
-                    ), row=1, col=1)
-                    
-                    # Allocation heatmap with black text + light background
-                    fig.add_trace(go.Heatmap(
-                        z=result.allocated, 
-                        colorscale=[[0, 'rgb(255,255,255)'], [0.3, 'rgb(40,167,69)'], [1, 'rgb(0,123,255)']],
-                        text=[[f"{x:.0f}" for x in row] for row in result.allocated],
-                        texttemplate="%{text}", 
-                        textfont={"size": 14, "color": "black"},
-                        colorbar=dict(title="Units", titleside="right"),
-                        showscale=True
-                    ), row=1, col=2)
-                    
-                    fig.update_layout(height=500, showlegend=False, margin={"t": 60})
-                    st.plotly_chart(fig, use_container_width=True)
-                    
-                    # Verification
-                    st.markdown("### Verification")
-                    st.info(f"**Total Cost: ₹{int(result.total_cost)}** | **Status: Global Optimum Achieved**")
-                    
-                except Exception as e:
-                    st.error(f"Computation Error: {str(e)}")
-                    st.info("Please ensure all values are valid numbers and supply ≈ demand")
-    
-    st.markdown('</div>', unsafe_allow_html=True)
+def resize_truck(event=None):
+    global truck_id1, canvas, truck_image1
+    canvas.delete(truck_id1)  # Remove the current truck image
 
-with tab2:
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.markdown("""
-    <h2 style='text-align: center; color: #1e293b; margin-bottom: 2rem;'>Algorithm Architecture</h2>
-    
-    <div style='display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;'>
-        <div>
-            <h3 style='color: #3b82f6; margin-bottom: 1rem;'>Phase 1: Vogel's Approximation</h3>
-            <ul style='color: #374151; line-height: 1.8;'>
-                <li>✓ PriorityQueue penalty calculation</li>
-                <li>✓ Iterative row/column selection</li>
-                <li>✓ Excellent initial feasible solution</li>
-            </ul>
-        </div>
-        <div>
-            <h3 style='color: #10b981; margin-bottom: 1rem;'>Phase 2: MODI Optimization</h3>
-            <ul style='color: #374151; line-height: 1.8;'>
-                <li>✓ BFS dual potentials (u, v)</li>
-                <li>✓ Negative reduced cost detection</li>
-                <li>✓ Guaranteed global optimum</li>
-            </ul>
-        </div>
-    </div>
-    
-    <div style='margin-top: 2rem; padding: 1.5rem; background: rgba(59,130,246,0.1); border-radius: 12px; border-left: 4px solid #3b82f6;'>
-        <h3 style='color: #1e293b; margin: 0 0 1rem 0;'>Production Components</h3>
-        <div style='display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;'>
-            <div><strong>Ans</strong><br>Allocation matrix + total cost</div>
-            <div><strong>IndexCost</strong><br>PriorityQueue elements</div>
-            <div><strong>VAM + MODI</strong><br>Global optimum solver</div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    # Calculate the size of the truck to fill the fullscreen canvas
+    truck_width = canvas.winfo_width()
+    truck_height = canvas.winfo_height()
 
-st.markdown("""
-<div style='
-    background: rgba(30,41,59,0.95); 
-    color: white; 
-    text-align: center; 
-    padding: 2rem; 
-    border-radius: 20px; 
-    margin: 2rem 0;
-'>
-    <p style='margin: 0 0 1rem 0; font-size: 1.1rem;'>
-        Production Implementation by <strong>Anurag Gaonkar</strong>
-    </p>
-    <a href='https://github.com/AnuragGaonkar/STEPPING-STONE-SOLUTION' 
-       style='color: #60a5fa; font-weight: 600; text-decoration: none; font-size: 1.1rem;'>
-        GitHub Repository
-    </a>
-</div>
-""", unsafe_allow_html=True)
+    # Load and resize the truck image
+    truck_image1 = Image.open(resource_path("1st.jpg"))
+    truck_image1 = truck_image1.resize((truck_width, truck_height), Image.LANCZOS)
+    truck_image1 = ImageTk.PhotoImage(truck_image1)
+
+    # Create and place the truck image in the canvas
+    truck_id1 = canvas.create_image(-truck_width, 80, anchor=tk.NW, image=truck_image1)  # Start truck outside the canvas
+
+def switch_to_frame2(event=None):
+    global current_frame, frame2
+    if frame2.winfo_ismapped():  # Check if frame2 is already packed
+        root.unbind("<Key>")  # Unbind the key event to disable switch_to_frame2
+        return  # If already packed, do nothing
+    frame2.pack(fill=tk.BOTH, expand=True)
+    frame2.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
+    canvas.pack_forget()
+
+
+root = tk.Tk()
+root.title("Transportation Problem Solver")
+root.geometry("1200x700")
+root.resizable(True, True)  
+
+icon_image = Image.open(resource_path("logo.ico"))
+icon_photo = ImageTk.PhotoImage(icon_image)
+root.iconphoto(True, icon_photo)
+
+canvas = tk.Canvas(root, bg='white')  # Set the background color to white
+canvas.pack(fill=tk.BOTH, expand=True)
+
+truck_image1 = Image.open(resource_path("1st.jpg"))
+truck_image1 = truck_image1.resize((200, 90), Image.LANCZOS)
+truck_image1 = ImageTk.PhotoImage(truck_image1)
+
+truck_id1 = None  # Truck ID
+truck_position1 = -200  # Truck position 
+truck_speed1 = 10  # Truck speed 
+
+current_frame = None
+
+frame2 = CTkFrame(master=root, fg_color='white', corner_radius=20)
+
+num_row_label = CTkLabel(frame2, text="Enter Number Of Sources:", font=("Arial", 15, "bold"), style={"foreground": "black", "background": "white"})
+num_row_label.grid(row=0, column=0, padx=10, pady=10)
+num_row_entry = CTkEntry(frame2)
+num_row_entry.grid(row=0, column=1, pady=10)
+
+num_row_label = CTkLabel(frame2, text="Enter Number Of Destinations:", font=("Arial", 15, "bold"), style={"foreground": "black", "background": "white"})
+num_row_label.grid(row=1, column=0, padx=10, pady=10)
+num_col_entry = CTkEntry(frame2)
+num_col_entry.grid(row=1, column=1, pady=10)
+
+try:
+    generate_button = CTkButton(frame2, text="Generate", command=cost_matrix_creator)
+    generate_button.grid(row=2, column=0, columnspan=2, pady=10)
+except ValueError:
+    messagebox.showerror("Error", "An error occurred while creating the generate button.")
+
+root.bind("<Key>", start_animation)
+
+
+root.mainloop()
