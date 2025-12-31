@@ -8,9 +8,8 @@ from plotly.subplots import make_subplots
 
 st.set_page_config(
     page_title="Smart Transportation Optimizer",
-    page_icon=":truck:",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    page_icon="logo.ico",
+    layout="wide"
 )
 
 st.markdown("""
@@ -60,6 +59,18 @@ st.markdown("""
 }
 .metric-orange { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important; }
 .metric-blue { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important; }
+.metric-value { 
+    font-size: 2.5rem !important; 
+    font-weight: 800 !important; 
+    color: white !important; 
+    margin: 0.5rem 0 0 0 !important;
+}
+.metric-label { 
+    font-size: 1rem !important; 
+    font-weight: 600 !important; 
+    color: rgba(255,255,255,0.9) !important; 
+    margin: 0 !important;
+}
 .btn-optimize { 
     background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important; 
     border-radius: 16px !important; 
@@ -68,7 +79,7 @@ st.markdown("""
     padding: 1rem 2rem !important;
     box-shadow: 0 10px 30px rgba(59,130,246,0.4) !important;
 }
-.sidebar .css-1d391kg { background: rgba(255,255,255,0.95) !important; }
+.dataframe { font-size: 1.1rem !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -182,21 +193,6 @@ def stepping_stone_method(costs, supply, demand):
         improve_allocation(costs, ans, best_i, best_j, s, d)
     return ans
 
-with st.sidebar:
-    st.markdown("""
-    <div style='padding: 1rem; text-align: center;'>
-        <h2 style='color: #1e293b; margin: 0;'>Smart Optimizer</h2>
-        <p style='color: #64748b;'>VAM + Stepping Stone Method</p>
-    </div>
-    """, unsafe_allow_html=True)
-    st.markdown("**Features:**")
-    st.markdown("- Unlimited matrix sizes (1x1 to 20x20)")
-    st.markdown("- Global optimum guarantee")
-    st.markdown("- Interactive visualizations")
-    st.markdown("---")
-    st.markdown("Built by Anurag Gaonkar")
-    st.markdown("[GitHub Repository](https://github.com/AnuragGaonkar/STEPPING-STONE-SOLUTION)")
-
 st.markdown("""
 <div class="header">
     <h1 class="title">Smart Transportation Optimizer</h1>
@@ -262,18 +258,21 @@ with tab1:
                     col1, col2, col3 = st.columns(3)
                     with col1:
                         st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-                        st.markdown(f"<h3>Total Cost</h3><h1>₹{int(result.total_cost):,}</h1>", unsafe_allow_html=True)
+                        st.markdown('<div class="metric-label">Total Cost</div>', unsafe_allow_html=True)
+                        st.markdown(f'<div class="metric-value">₹{int(result.total_cost):,}</div>', unsafe_allow_html=True)
                         st.markdown('</div>', unsafe_allow_html=True)
                     
                     with col2:
                         st.markdown('<div class="metric-card metric-orange">', unsafe_allow_html=True)
                         routes_used = sum(1 for row in result.allocated for x in row if x > 0)
-                        st.markdown(f"<h3>Routes Used</h3><h1>{routes_used}</h1>", unsafe_allow_html=True)
+                        st.markdown('<div class="metric-label">Routes Used</div>', unsafe_allow_html=True)
+                        st.markdown(f'<div class="metric-value">{routes_used}</div>', unsafe_allow_html=True)
                         st.markdown('</div>', unsafe_allow_html=True)
                     
                     with col3:
                         st.markdown('<div class="metric-card metric-blue">', unsafe_allow_html=True)
-                        st.markdown(f"<h3>Matrix Size</h3><h1>{rows}×{cols}</h1>", unsafe_allow_html=True)
+                        st.markdown('<div class="metric-label">Matrix Size</div>', unsafe_allow_html=True)
+                        st.markdown(f'<div class="metric-value">{rows}×{cols}</div>', unsafe_allow_html=True)
                         st.markdown('</div>', unsafe_allow_html=True)
                     
                     st.markdown("### Optimal Allocation Matrix")
@@ -282,16 +281,16 @@ with tab1:
                         index=[f"S{i+1}" for i in range(rows)],
                         columns=[f"D{j+1}" for j in range(cols)]
                     )
-                    st.dataframe(alloc_df.round(1).style.background_gradient(cmap='viridis'), use_container_width=True)
+                    st.dataframe(alloc_df.round(1), use_container_width=True)
                     
                     fig = make_subplots(1, 2, subplot_titles=["Cost Matrix (₹)", "Optimal Allocation"])
                     fig.add_trace(go.Heatmap(z=cost_matrix, colorscale="Reds", 
                                            text=[[f"₹{int(x)}" for x in row] for row in cost_matrix],
-                                           texttemplate="%{text}", textfont={"size": 12},
+                                           texttemplate="%{text}", textfont={"size": 14, "color": "white"},
                                            colorbar=dict(title="Cost")), row=1, col=1)
                     fig.add_trace(go.Heatmap(z=result.allocated, colorscale="Viridis",
                                            text=[[f"{x:.0f}" for x in row] for row in result.allocated],
-                                           texttemplate="%{text}", textfont={"size": 12},
+                                           texttemplate="%{text}", textfont={"size": 14, "color": "white"},
                                            colorbar=dict(title="Units")), row=1, col=2)
                     fig.update_layout(height=450, showlegend=False, margin={"t": 50})
                     st.plotly_chart(fig, use_container_width=True)
