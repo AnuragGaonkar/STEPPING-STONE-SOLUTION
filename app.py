@@ -356,10 +356,11 @@ with tab1:
                     
                     # FIXED: Perfect readable heatmaps - REMOVED titleside property
                     fig = make_subplots(1, 2, subplot_titles=["Cost Matrix (₹)", "Optimal Allocation"])
-                    
+                    cost_matrix_flipped = cost_matrix[::-1]
+                    alloc_matrix_flipped = result.allocated[::-1]
                     # Cost heatmap with white text + light background
                     fig.add_trace(go.Heatmap(
-                        z=cost_matrix, 
+                        z=cost_matrix_flipped, 
                         colorscale=[[0, 'rgb(255,255,255)'], [1, 'rgb(220,53,69)']],
                         text=[[f"₹{int(x)}" for x in row] for row in cost_matrix],
                         texttemplate="%{text}", 
@@ -370,7 +371,7 @@ with tab1:
                     
                     # Allocation heatmap with black text + light background
                     fig.add_trace(go.Heatmap(
-                        z=result.allocated, 
+                        z=alloc_matrix_flipped, 
                         colorscale=[[0, 'rgb(255,255,255)'], [0.3, 'rgb(40,167,69)'], [1, 'rgb(0,123,255)']],
                         text=[[f"{x:.0f}" for x in row] for row in result.allocated],
                         texttemplate="%{text}", 
