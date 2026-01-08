@@ -7,21 +7,23 @@
     <strong>An algorithmic optimization tool designed to solve complex transportation problems using Vogel's Approximation Method (VAM) and the Stepping Stone algorithm.</strong>
   </p>
 
-  [![Python](https://img.shields.io/badge/Language-Python_3.10-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-  [![Tkinter](https://img.shields.io/badge/GUI-Tkinter-blue)](https://docs.python.org/3/library/tkinter.html)
-  [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+  <p>
+    <a href="https://stepping-stone-solution-lzezabbhmtqpyowvnesj6f.streamlit.app/"><strong>Explore the Live Demo »</strong></a>
+  </p>
+
+  [![Live Demo](https://img.shields.io/badge/Demo-Live_on_Streamlit-FF4B4B?style=for-the-badge&logo=streamlit)](https://stepping-stone-solution-lzezabbhmtqpyowvnesj6f.streamlit.app/)
+  [![Python](https://img.shields.io/badge/Language-Python_3.10-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+  [![Tkinter](https://img.shields.io/badge/GUI-Tkinter-blue?style=for-the-badge)](https://docs.python.org/3/library/tkinter.html)
 </div>
 
 ---
 
 ## Executive Summary
-[cite_start]The Stepping Stone Solution is a desktop application developed to optimize supply chain allocation. [cite_start]It automates the process of finding the most cost-effective way to transport goods from multiple sources to multiple destinations. 
-
-By implementing classic Operations Research algorithms, this tool reduces manual computation errors and provides an intuitive GUI for logistical decision-making.
+[cite_start]The Stepping Stone Solution is a desktop application developed to optimize supply chain allocation[cite: 27]. [cite_start]It automates the process of finding the most cost-effective way to transport goods from multiple sources to multiple destinations[cite: 27]. By implementing classic Operations Research algorithms, this tool reduces manual computation errors and provides an intuitive GUI for logistical decision-making.
 
 ## Core Features
-* [cite_start]**Dual-Phase Optimization:** Uses Vogel's Approximation Method (VAM) for the Initial Basic Feasible Solution (IBFS) and the Stepping Stone algorithm for final optimality.
-* [cite_start]**Dynamic Grid Support:** Optimized supply allocation for configurations up to 4 sources and 4 destinations.
+* [cite_start]**Dual-Phase Optimization:** Uses Vogel's Approximation Method (VAM) for the Initial Basic Feasible Solution (IBFS) and the Stepping Stone algorithm for final optimality[cite: 27].
+* [cite_start]**Dynamic Grid Support:** Optimized supply allocation for configurations up to 4 sources and 4 destinations[cite: 27].
 * **Real-time Cost Calculation:** Instantly computes total transportation costs based on user-defined unit costs, supply, and demand.
 * [cite_start]**User-Friendly Interface:** Built with Tkinter and Pillow for a clean, accessible desktop experience[cite: 26, 27].
 
@@ -29,6 +31,8 @@ By implementing classic Operations Research algorithms, this tool reduces manual
 
 ## Technical Architecture
 The application follows a structured Python architecture to separate mathematical logic from the presentation layer.
+
+
 
 * [cite_start]**Presentation Layer:** Built using **Tkinter** for the windowing system and **Pillow** for image rendering and assets[cite: 26].
 * **Algorithmic Engine:** Custom Python implementations of:
