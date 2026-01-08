@@ -77,7 +77,8 @@ python Trnsprt.py
 
 ### Application Interface
 *Interactive GUI for solving transportation problems with real-time cost optimization.*
-<img src="transportation.jpg" alt="Stepping Stone Solution Interface" width="100%"/>
+
+<img src="transportation.png" alt="Stepping Stone Solution Interface" width="100%"/>
 
 ### Application Walkthrough
 *Demonstration of the VAM and Stepping Stone algorithms in action, from inputting supply/demand to finding the optimal transportation route.*
