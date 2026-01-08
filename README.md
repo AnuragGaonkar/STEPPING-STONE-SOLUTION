@@ -63,11 +63,11 @@ python Trnsprt.py
 
 ## Engineering Challenges and Resolutions
 
-### Standardizing Multi-Modal Inputs
+### Algorithmic Complexity in Optimal Routing
 * **Challenge**: Manually calculating the closed loops required for the Stepping Stone algorithm is mathematically intensive and prone to errors in a software environment.
 * **Resolution**: Developed a recursive path-finding function that identifies valid closed loops in the allocation matrix, ensuring the algorithm correctly evaluates the improvement index for every non-basic variable.
 
-### Moving Beyond Black-Box Inference
+### Dynamic GUI Grid Management
 * **Challenge**: Creating a responsive grid that allows users to input varying numbers of sources and destinations without breaking the layout.
 * **Resolution**: Utilized Tkinter’s grid geometry manager to dynamically generate input fields, allowing for a flexible interface that scales up to a 4x4 logistics matrix.
 
